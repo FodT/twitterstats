@@ -1,9 +1,16 @@
 # twitterstats
 
-simple tool to pull tweets and do some kind of analysis to. probably just 'num of tweets per user per day'
+Simple tool to pull tweets and do some kind of analysis to. 
+Probably just 'num of tweets per user per day'.
+
 
 it's a work in progress.
 
-dependencies:
-requests
-httmock
+Todo:
+* Pull tweets of followed handles into a db of some kind
+* Stats reporting.
+
+
+Dependencies:
+* requests
+* httmock
