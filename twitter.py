@@ -4,6 +4,7 @@ import os
 import requests
 import urllib
 import sys
+from datetime import datetime
 
 credentials = {
     'key': 'GET_YOUR_OWN',
@@ -91,6 +92,15 @@ class Twitter:
             cursor = content['next_cursor']
             ids += content['ids']
         return ids
+
+    def get_tweets_until(self, user_id, target_date):
+        tweets = []
+        new_tweets = self.get_tweets_by(user_id)
+        for tweet in new_tweets:
+            date_created = datetime.strptime(tweet['created_at'], '%a %b %d %H:%M:%S +0000 %Y').date()
+            if date_created >= target_date:
+                tweets.append(tweet)
+        return tweets
 
     def get_tweets_by(self, user_id, max_id=sys.maxint):
         api_path = '%sstatuses/user_timeline.json?count=200&user_id=%d' % (base_api_url, user_id)

@@ -1,5 +1,7 @@
 import os.path
 import unittest
+import datetime
+import json
 from httmock import all_requests, HTTMock
 import twitter
 
@@ -42,3 +44,12 @@ class TestTwitter(unittest.TestCase):
         with HTTMock(api_mocks):
             tweets = self.t.get_tweets_by(1)
             self.assertEqual(len(tweets), 200)
+
+    def testGetTweetsUntil(self):
+        with open('test/fixtures/tweets_apr_23_2015.json') as f:
+            expected = json.load(f)
+
+        with HTTMock(api_mocks):
+            target_date = datetime.date(2015, 4, 23)
+            tweets = self.t.get_tweets_until(1, target_date)
+            self.assertEqual(len(tweets), len(expected))
