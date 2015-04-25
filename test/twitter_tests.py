@@ -13,6 +13,8 @@ def api_mocks(url, request):
         path = os.path.normpath('test/fixtures/ids-1.json')
     elif 'cursor=1234' in url.query:
         path = os.path.normpath('test/fixtures/ids-2.json')
+    elif '/user_timeline' in url.path:
+        path = os.path.normpath('test/fixtures/tweets.json')
     with open(path, "r") as resource:
         return {'status_code': 200,
                 'content': resource.read()}
@@ -35,3 +37,8 @@ class TestTwitter(unittest.TestCase):
         with HTTMock(api_mocks):
             ids = self.t.get_followed_ids('user')
             self.assertEqual(len(ids), 30)
+
+    def testGetTweets(self):
+        with HTTMock(api_mocks):
+            tweets = self.t.get_tweets_by(1)
+            self.assertEqual(len(tweets), 200)

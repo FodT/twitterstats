@@ -3,10 +3,11 @@ import json
 import os
 import requests
 import urllib
+import sys
 
 credentials = {
-    'key':      'GET_YOUR_OWN',
-    'secret':   'GET_YOUR_OWN'}
+    'key': 'GET_YOUR_OWN',
+    'secret': 'GET_YOUR_OWN'}
 
 base_api_url = 'https://api.twitter.com/1.1/'
 base_oauth_url = 'https://api.twitter.com/oauth2/'
@@ -39,12 +40,20 @@ def get_application_only_token(consumer_key, consumer_secret):
     headers = {'Authorization': 'Basic ' + access_token,
                'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'}
     payload = 'grant_type=client_credentials'
-    r = requests.post(base_oauth_url+'token', headers=headers, data=payload)
+    r = requests.post(base_oauth_url + 'token', headers=headers, data=payload)
     if r.status_code != 200:
         raise TwitterException('Failed to get authentication token')
 
     bearer_token = json.loads(r.content)['access_token']
     return bearer_token
+
+
+def assert_request_success(r, expected_code, error):
+    if r.status_code != expected_code:
+        content = json.loads(r.content)
+        error = content['errors'][0]
+        raise TwitterException('%s; HTTP status %d, twitter code %d, message: %s'
+                               % (error, r.status_code, error['code'], error['message']))
 
 
 class Twitter:
@@ -62,8 +71,7 @@ class Twitter:
         headers = self.get_headers()
         r = requests.get(base_api_url + 'application/rate_limit_status.json',
                          headers=headers)
-        if r.status_code != 200:
-            raise TwitterException('could not get rate limit status; something is very wrong')
+        assert_request_success(r, 200, 'could not get rate limit status; something is very wrong')
 
     def get_headers(self):
         if not self.bearer_token:
@@ -78,12 +86,15 @@ class Twitter:
         while not cursor == 0:
             url_with_cursor = '%s&cursor=%d' % (api_path, cursor)
             r = requests.get(url_with_cursor, headers=self.get_headers())
+            assert_request_success(r, 200, "Failed to get %s\'s follows" % handle)
             content = json.loads(r.content)
             cursor = content['next_cursor']
-            if r.status_code != 200:
-                error = content['errors'][0]
-                raise TwitterException('Failed to get %s\'s follows; http status code %d, twitter code %d, message: %s'
-                                       % (handle, r.status_code, error['code'], error['message']))
             ids += content['ids']
-
         return ids
+
+    def get_tweets_by(self, tweet_id, max_id=sys.maxint):
+        api_path = '%sstatuses/user_timeline.json?count=200&user_id=%d' % (base_api_url, tweet_id)
+        url_with_cursor = api_path if max_id == sys.maxint else '%s&max_id=%d' % (api_path, max_id - 1)
+        r = requests.get(url_with_cursor, headers=self.get_headers())
+        assert_request_success(r, 200, 'Failed to get tweets for %d' % tweet_id)
+        return json.loads(r.content)
