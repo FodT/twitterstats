@@ -20,8 +20,8 @@ class TwitterException(Exception):
 
 
 def save_credentials(fn, data):
-        with open(fn, 'w') as f:
-            json.dump(data, f)
+    with open(fn, 'w') as f:
+        json.dump(data, f)
 
 
 def load_credentials(fn):
@@ -92,9 +92,9 @@ class Twitter:
             ids += content['ids']
         return ids
 
-    def get_tweets_by(self, tweet_id, max_id=sys.maxint):
-        api_path = '%sstatuses/user_timeline.json?count=200&user_id=%d' % (base_api_url, tweet_id)
+    def get_tweets_by(self, user_id, max_id=sys.maxint):
+        api_path = '%sstatuses/user_timeline.json?count=200&user_id=%d' % (base_api_url, user_id)
         url_with_cursor = api_path if max_id == sys.maxint else '%s&max_id=%d' % (api_path, max_id - 1)
         r = requests.get(url_with_cursor, headers=self.get_headers())
-        assert_request_success(r, 200, 'Failed to get tweets for %d' % tweet_id)
+        assert_request_success(r, 200, 'Failed to get tweets for %d' % user_id)
         return json.loads(r.content)
