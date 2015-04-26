@@ -1,5 +1,6 @@
 import os.path
 import unittest
+from mock import MagicMock
 import datetime
 import json
 from httmock import all_requests, HTTMock
@@ -24,9 +25,10 @@ def api_mocks(url, request):
 
 class TestTwitter(unittest.TestCase):
     def setUp(self):
+        self.mock_tdb = MagicMock()
         twitter.credentials_path = os.path.expanduser('test/fixtures/test_credentials')
         with HTTMock(api_mocks):
-            self.t = twitter.Twitter()
+            self.t = twitter.Twitter(self.mock_tdb)
 
     def tearDown(self):
         self.t = None
@@ -46,6 +48,7 @@ class TestTwitter(unittest.TestCase):
             self.assertEqual(len(tweets), 200)
 
     def testGetTweetsUntil(self):
+        self.mock_tdb.get_tweets_by = MagicMock(return_value=[])
         with open('test/fixtures/tweets_apr_23_2015.json') as f:
             expected = json.load(f)
 

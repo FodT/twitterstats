@@ -58,3 +58,11 @@ class TwitterDB:
         if row is not None:
             result = row[0]
         return result
+
+    def get_tweets_by(self, user_name="", user_id="", date_until=datetime.now()):
+        # either search for the user ID or the userName depending on which is specified.
+        if not user_id:
+            user_id = self.get_user_id(user_name)
+        sql = """SELECT tweet FROM tweets where user_id = '""" + str(user_id) + """' ORDER BY id DESC"""
+        self.c.execute(sql)
+        return self.c.fetchall()

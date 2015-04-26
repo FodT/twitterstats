@@ -59,9 +59,9 @@ def assert_request_success(r, expected_code, error):
 
 class Twitter:
 
-    def __init__(self):
+    def __init__(self, twittertb):
         self.bearer_token = ""
-
+        self.twitterdb = twittertb
         if not os.path.exists(credentials_path):
             save_credentials(credentials_path, credentials)
             raise TwitterException('create a consumer/secret key and place them in ./twitter_credentials')
@@ -95,16 +95,21 @@ class Twitter:
 
     def get_tweets_until(self, user_id, target_date):
         tweets = []
-        new_tweets = self.get_tweets_by(user_id)
+        request_again = False
+        last_seen_id = self.twitterdb.get_latest_tweet_id(user_id=user_id)
+        db_tweets = self.twitterdb.get_tweets_by(user_id=user_id)
+        tweets += db_tweets
+        new_tweets = self.get_tweets_by(user_id, since_id=last_seen_id)
         for tweet in new_tweets:
-            date_created = datetime.strptime(tweet['created_at'], '%a %b %d %H:%M:%S +0000 %Y').date()
-            if date_created >= target_date:
+            datetime_created = datetime.strptime(tweet['created_at'], '%a %b %d %H:%M:%S +0000 %Y')
+            if datetime_created.date() >= target_date:
+                self.twitterdb.add_tweet(tweet['id'], user_id, json.dumps(tweet), datetime_created)
                 tweets.append(tweet)
         return tweets
 
-    def get_tweets_by(self, user_id, max_id=sys.maxint):
-        api_path = '%sstatuses/user_timeline.json?count=200&user_id=%d' % (base_api_url, user_id)
-        url_with_cursor = api_path if max_id == sys.maxint else '%s&max_id=%d' % (api_path, max_id - 1)
-        r = requests.get(url_with_cursor, headers=self.get_headers())
+    def get_tweets_by(self, user_id, since_id=0, max_id=sys.maxint):
+        api_path = '%sstatuses/user_timeline.json?since_id=%d&max_id=%d&user_id=%d&count=200' % \
+                   (base_api_url, since_id, max_id, user_id)
+        r = requests.get(api_path, headers=self.get_headers())
         assert_request_success(r, 200, 'Failed to get tweets for %d' % user_id)
         return json.loads(r.content)
