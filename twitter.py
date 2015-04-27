@@ -5,6 +5,7 @@ import requests
 import urllib
 import sys
 from datetime import datetime
+from twitter_db import Tweet
 
 credentials = {
     'key': 'GET_YOUR_OWN',
@@ -104,18 +105,21 @@ class Twitter:
     def get_tweets_until(self, user_id, target_date):
         tweets = []
         request_again = False
-        last_seen_id = self.twitterdb.get_latest_tweet_id(user_id=user_id)
-        db_tweets = self.twitterdb.get_tweets_by(user_id=user_id)
+        last_seen = self.twitterdb.get_latest_tweet(user_id=user_id)
+        last_seen_id = 1 if not last_seen else last_seen.id
+        db_tweets = self.twitterdb.get_tweets_by(user_id)
         tweets += db_tweets
         new_tweets = self.get_tweets_by(user_id, since_id=last_seen_id)
         for tweet in new_tweets:
             datetime_created = datetime.strptime(tweet['created_at'],
                                                  '%a %b %d %H:%M:%S +0000 %Y')
             if datetime_created.date() >= target_date:
-                self.twitterdb.add_tweet(tweet['id'],
-                                         user_id,
-                                         json.dumps(tweet),
-                                         datetime_created)
+                db_tweet = Tweet(
+                    id=tweet['id'],
+                    user_id=user_id,
+                    date_created=datetime_created,
+                    tweet=json.dumps(tweet))
+                self.twitterdb.add_tweet(db_tweet)
                 tweets.append(tweet)
         return tweets
 

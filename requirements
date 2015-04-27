@@ -2,3 +2,4 @@ requests
 httmock
 pep8
 pylint
+sqlalchemy
