@@ -68,7 +68,12 @@ class TestDBFunctions(unittest.TestCase):
 
     def test_add_same_tweet(self):
         self.tdb.add_tweet(1, 123456, "Hello this is Fod")
-        self.assertEqual(self.tdb.add_tweet(1, 123456, "Different tweet with same ID! Invalid", datetime.now()), False)
+        self.assertEqual(
+            self.tdb.add_tweet(
+                1,
+                123456,
+                "Different tweet with same ID! Invalid",
+                datetime.now()), False)
 
     def test_get_user_id(self):
         self.tdb.add_user(123456, "Fod")
@@ -81,8 +86,10 @@ class TestDBFunctions(unittest.TestCase):
 
     def test_get_last_tweet_id(self):
         self.tdb.add_tweet(1, 123456, "Hello this is my first tweet")
-        self.tdb.add_tweet(4, 333333, "Hello this is someone completely different")
-        self.tdb.add_tweet(2, 123456, "Hello this is my latest tweet")
+        self.tdb.add_tweet(4, 333333,
+                           "Hello this is someone completely different")
+        self.tdb.add_tweet(2, 123456,
+                           "Hello this is my latest tweet")
         id = self.tdb.get_latest_tweet_id(user_id=123456)
 
         sql = """select * from tweets"""
@@ -98,7 +105,8 @@ class TestDBFunctions(unittest.TestCase):
         self.tdb.add_user(123456, "Fod")
         self.tdb.add_user(333333, "SomeoneElse")
         self.tdb.add_tweet(1, 123456, "Hello this is my first tweet")
-        self.tdb.add_tweet(4, 333333, "Hello this is someone completely different")
+        self.tdb.add_tweet(4, 333333,
+                           "Hello this is someone completely different")
         self.tdb.add_tweet(2, 123456, "Hello this is my latest tweet")
         id = self.tdb.get_latest_tweet_id(user_name="Fod")
 

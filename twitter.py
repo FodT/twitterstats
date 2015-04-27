@@ -39,7 +39,8 @@ def get_application_only_token(consumer_key, consumer_secret):
     access_token = base64.b64encode(':'.join([key, secret]))
 
     headers = {'Authorization': 'Basic ' + access_token,
-               'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'}
+               'Content-Type': 'application/x-www-form-urlencoded;'
+                               'charset=UTF-8'}
     payload = 'grant_type=client_credentials'
     r = requests.post(base_oauth_url + 'token', headers=headers, data=payload)
     if r.status_code != 200:
@@ -53,8 +54,9 @@ def assert_request_success(r, expected_code, error):
     if r.status_code != expected_code:
         content = json.loads(r.content)
         error = content['errors'][0]
-        raise TwitterException('%s; HTTP status %d, twitter code %d, message: %s'
-                               % (error, r.status_code, error['code'], error['message']))
+        error_msg = '%s; HTTP status %d, twitter code %d, message: %s' \
+                % (error, r.status_code, error['code'], error['message'])
+        raise TwitterException(error_msg)
 
 
 class Twitter:
@@ -64,30 +66,38 @@ class Twitter:
         self.twitterdb = twittertb
         if not os.path.exists(credentials_path):
             save_credentials(credentials_path, credentials)
-            raise TwitterException('create a consumer/secret key and place them in ./twitter_credentials')
+            error = 'create a consumer/secret key and place them in ' \
+                    './twitter_credentials'
+            raise TwitterException(error)
         else:
             self.credentials = load_credentials(credentials_path)
 
-        self.bearer_token = get_application_only_token(self.credentials['key'], self.credentials['secret'])
+        self.bearer_token = get_application_only_token(
+            self.credentials['key'],
+            self.credentials['secret'])
         headers = self.get_headers()
         r = requests.get(base_api_url + 'application/rate_limit_status.json',
                          headers=headers)
-        assert_request_success(r, 200, 'could not get rate limit status; something is very wrong')
+        error = 'could not get rate limit status; something is very wrong'
+        assert_request_success(r, 200, error)
 
     def get_headers(self):
         if not self.bearer_token:
             raise TwitterException('bearer_token not initialised')
         return {'Authorization': 'Bearer ' + self.bearer_token,
-                'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'}
+                'Content-Type': 'application/x-www-form-urlencoded;'
+                                'charset=UTF-8'}
 
     def get_followed_ids(self, handle):
         ids = []
         cursor = -1
-        api_path = '%sfriends/ids.json?count=20&screen_name=%s' % (base_api_url, handle)
+        api_path = '%sfriends/ids.json?count=20&screen_name=%s'\
+                   % (base_api_url, handle)
         while not cursor == 0:
             url_with_cursor = '%s&cursor=%d' % (api_path, cursor)
             r = requests.get(url_with_cursor, headers=self.get_headers())
-            assert_request_success(r, 200, "Failed to get %s\'s follows" % handle)
+            error =  "Failed to get %s\'s follows" % handle
+            assert_request_success(r, 200, error)
             content = json.loads(r.content)
             cursor = content['next_cursor']
             ids += content['ids']
@@ -101,14 +111,22 @@ class Twitter:
         tweets += db_tweets
         new_tweets = self.get_tweets_by(user_id, since_id=last_seen_id)
         for tweet in new_tweets:
-            datetime_created = datetime.strptime(tweet['created_at'], '%a %b %d %H:%M:%S +0000 %Y')
+            datetime_created = datetime.strptime(tweet['created_at'],
+                                                 '%a %b %d %H:%M:%S +0000 %Y')
             if datetime_created.date() >= target_date:
-                self.twitterdb.add_tweet(tweet['id'], user_id, json.dumps(tweet), datetime_created)
+                self.twitterdb.add_tweet(tweet['id'],
+                                         user_id,
+                                         json.dumps(tweet),
+                                         datetime_created)
                 tweets.append(tweet)
         return tweets
 
     def get_tweets_by(self, user_id, since_id=0, max_id=sys.maxint):
-        api_path = '%sstatuses/user_timeline.json?since_id=%d&max_id=%d&user_id=%d&count=200' % \
+        api_path = '%sstatuses/user_timeline.json?' \
+                   'since_id=%d' \
+                   '&max_id=%d' \
+                   '&user_id=%d' \
+                   '&count=200' % \
                    (base_api_url, since_id, max_id, user_id)
         r = requests.get(api_path, headers=self.get_headers())
         assert_request_success(r, 200, 'Failed to get tweets for %d' % user_id)

@@ -26,7 +26,8 @@ def api_mocks(url, request):
 class TestTwitter(unittest.TestCase):
     def setUp(self):
         self.mock_tdb = MagicMock()
-        twitter.credentials_path = os.path.expanduser('test/fixtures/test_credentials')
+        twitter.credentials_path = os.path.expanduser(
+            'test/fixtures/test_credentials')
         with HTTMock(api_mocks):
             self.t = twitter.Twitter(self.mock_tdb)
 
