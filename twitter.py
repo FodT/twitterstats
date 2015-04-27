@@ -93,7 +93,7 @@ class Twitter:
     def get_followed_ids(self, handle):
         ids = []
         cursor = -1
-        api_path = '{0}friends/ids.json?count=200&screen_name={1}' \
+        api_path = '{0}friends/ids.json?screen_name={1}' \
                    .format(base_api_url, handle)
         while not cursor == 0:
             url_with_cursor = '{0}&cursor={1}'.format(api_path, cursor)
