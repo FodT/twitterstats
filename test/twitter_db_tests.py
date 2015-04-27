@@ -106,3 +106,26 @@ class TestDBFunctions(unittest.TestCase):
 
         self.assertEqual(len(tweets), 3)
         self.assertEqual(tweets[0].id, 3)
+
+    def testGetTweetsByWithDate(self):
+        past_date = datetime(2015, 3, 1)
+        now_date = datetime.now()
+        tweet1 = Tweet(id=1, user_id=1,
+                       date_created=past_date,
+                       tweet=json.dumps(tweet_fixture[0]))
+        tweet2 = Tweet(id=2, user_id=1,
+                       date_created=now_date,
+                       tweet=json.dumps(tweet_fixture[1]))
+
+        self.db.add_tweet(tweet1)
+        self.db.add_tweet(tweet2)
+
+        in_between_date = datetime(2015, 4, 1)
+
+        now_tweets = self.db.get_tweets_by(1, now_date)
+        intermediate_tweets = self.db.get_tweets_by(1, in_between_date)
+
+        self.assertEqual(len(now_tweets), 1)
+        self.assertEqual(len(intermediate_tweets), 1)
+        self.assertEqual(now_tweets[0].id, 2)
+        self.assertEqual(intermediate_tweets[0].id, 2)

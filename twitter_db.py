@@ -1,7 +1,7 @@
 from datetime import datetime
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, and_
 from sqlalchemy.orm import sessionmaker
 import json
 from sqlalchemy.ext.declarative import declarative_base
@@ -55,7 +55,9 @@ class Twitter_DB:
 
     def get_tweets_by(self, userid, date_until=None):
         if not date_until:
-            date_until = datetime.now()
+            date_until = datetime(1900, 1, 1)
         session = self.sessionmaker()
-        return session.query(Tweet).filter_by(user_id=userid). \
+        return session.query(Tweet).filter(
+            and_(Tweet.user_id == userid,
+                 Tweet.date_created >= date_until)). \
             order_by(Tweet.id.desc()).all()
