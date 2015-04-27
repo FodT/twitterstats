@@ -105,10 +105,10 @@ class Twitter:
     def get_tweets_until(self, user_id, target_date):
         tweets = []
         request_again = False
-        last_seen = self.twitterdb.get_latest_tweet(user_id=user_id)
+        last_seen = self.twitterdb.get_latest_tweet(user_id)
         last_seen_id = 1 if not last_seen else last_seen.id
         db_tweets = self.twitterdb.get_tweets_by(user_id)
-        tweets += db_tweets
+        tweets += [t.tweet for t in db_tweets]
         new_tweets = self.get_tweets_by(user_id, since_id=last_seen_id)
         for tweet in new_tweets:
             datetime_created = datetime.strptime(tweet['created_at'],
@@ -123,7 +123,7 @@ class Twitter:
                 tweets.append(tweet)
         return tweets
 
-    def get_tweets_by(self, user_id, since_id=0, max_id=sys.maxint):
+    def get_tweets_by(self, user_id, since_id=0, max_id=sys.maxint-1):
         api_path = '%sstatuses/user_timeline.json?' \
                    'since_id=%d' \
                    '&max_id=%d' \

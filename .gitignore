@@ -1,3 +1,5 @@
 twitter_credentials
 *.pyc
 *.db
+*.idea
+
