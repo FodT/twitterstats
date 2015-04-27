@@ -37,6 +37,7 @@ if __name__ == '__main__':
     one_week_ago = datetime.now() - timedelta(days=7)
     for id in ids:
         user = tdb.get_user_by_id(id)
-        logger.info('getting tweets for {0}:{1}'.format(user.user_name, user.user_id))
+        logger.info('getting tweets for {0}:{1}'.format(user.user_name,
+                                                        user.user_id))
         t.get_tweets_until(id, one_week_ago, user_refresh)
     logger.info('done saving all the followed tweets i can!')
