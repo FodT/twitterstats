@@ -20,10 +20,10 @@ class Tweet(Base):
     tweet = Column(String)
 
     def __repr__(self):
-        return "<Tweet(id='%d', user_id='%d', " \
-               "date_created='%s, tweet=...%s...')>" % (
-                   self.id, self.user_id,
-                   self.date_created, json.loads(self.tweet)['text'])
+        return "<Tweet(id='{0}', user_id='{1}', " \
+               "date_created='{2}, tweet=...{3}...')>"\
+            .format(self.id, self.user_id,
+                    self.date_created, json.loads(self.tweet)['text'])
 
 
 class Twitter_DB:

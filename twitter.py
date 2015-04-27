@@ -54,8 +54,9 @@ def assert_request_success(r, expected_code, error):
     if r.status_code != expected_code:
         content = json.loads(r.content)
         error = content['errors'][0]
-        error_msg = '%s; HTTP status %d, twitter code %d, message: %s' \
-                    % (error, r.status_code, error['code'], error['message'])
+        error_msg = '{0]; HTTP status {1}, twitter code {2}, message: {3}' \
+                    .format(error, r.status_code,
+                            error['code'], error['message'])
         raise TwitterException(error_msg)
     if r.headers['x-rate-limit-remaining'] == 0:
         raise TwitterException('rate limit exceeded. try running again in 15m')
@@ -92,12 +93,12 @@ class Twitter:
     def get_followed_ids(self, handle):
         ids = []
         cursor = -1
-        api_path = '%sfriends/ids.json?count=20&screen_name=%s' \
-                   % (base_api_url, handle)
+        api_path = '{0}friends/ids.json?count=200&screen_name={1}' \
+                   .format(base_api_url, handle)
         while not cursor == 0:
-            url_with_cursor = '%s&cursor=%d' % (api_path, cursor)
+            url_with_cursor = '{0}&cursor={1}'.format(api_path, cursor)
             r = requests.get(url_with_cursor, headers=self.get_headers())
-            error = "Failed to get %s\'s follows" % handle
+            error = "Failed to get {0}\'s follows".format(handle)
             assert_request_success(r, 200, error)
             content = json.loads(r.content)
             cursor = content['next_cursor']
@@ -138,12 +139,13 @@ class Twitter:
         return tweets
 
     def get_tweets_by(self, user_id, since_id=0, max_id=sys.maxint - 1):
-        api_path = '%sstatuses/user_timeline.json?' \
-                   'since_id=%d' \
-                   '&max_id=%d' \
-                   '&user_id=%d' \
-                   '&count=200' % \
-                   (base_api_url, since_id, max_id, user_id)
+        api_path = '{0}statuses/user_timeline.json?' \
+                   'since_id={1}' \
+                   '&max_id={2}' \
+                   '&user_id={3}' \
+                   '&count=200'  \
+                   .format(base_api_url, since_id, max_id, user_id)
         r = requests.get(api_path, headers=self.get_headers())
-        assert_request_success(r, 200, 'Failed to get tweets for %d' % user_id)
+        assert_request_success(r, 200, 'Failed to get tweets for {0}'
+                               .format(user_id))
         return json.loads(r.content)
