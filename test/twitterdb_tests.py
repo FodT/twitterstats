@@ -154,4 +154,4 @@ class TestDBFunctions(unittest.TestCase):
         self.db.add_user(user1)
         self.db.add_user(user2)
         ids = self.db.get_unknown_user_ids([1, 2, 3, 4])
-        self.assertEqual(ids, set([3, 4]))
+        self.assertEqual(ids, [3, 4])

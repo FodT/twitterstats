@@ -76,7 +76,7 @@ class TwitterDB:
         ids = session.query(User.user_id).all()
         ids = list(sum(ids, ()))
 
-        return set(user_ids).difference(ids)
+        return list(set(user_ids).difference(ids))
 
     def get_latest_tweet_id(self, userid):
         session = self.sessionmaker()

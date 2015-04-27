@@ -5,7 +5,7 @@ import requests
 import urllib
 import sys
 from datetime import datetime
-from twitterdb import Tweet
+from twitterdb import Tweet, User
 
 credentials = {
     'key': 'GET_YOUR_OWN',
@@ -54,9 +54,9 @@ def assert_request_success(r, expected_code, error):
     if r.status_code != expected_code:
         content = json.loads(r.content)
         error = content['errors'][0]
-        error_msg = '{0]; HTTP status {1}, twitter code {2}, message: {3}' \
-                    .format(error, r.status_code,
-                            error['code'], error['message'])
+        error_msg = '{0}; HTTP status {1}, twitter code {2}, message: {3}' \
+            .format(error, r.status_code,
+                    error['code'], error['message'])
         raise TwitterException(error_msg)
     if r.headers['x-rate-limit-remaining'] == 0:
         raise TwitterException('rate limit exceeded. try running again in 15m')
@@ -94,7 +94,7 @@ class Twitter:
         ids = []
         cursor = -1
         api_path = '{0}friends/ids.json?screen_name={1}' \
-                   .format(base_api_url, handle)
+            .format(base_api_url, handle)
         while not cursor == 0:
             url_with_cursor = '{0}&cursor={1}'.format(api_path, cursor)
             r = requests.get(url_with_cursor, headers=self.get_headers())
@@ -103,7 +103,28 @@ class Twitter:
             content = json.loads(r.content)
             cursor = content['next_cursor']
             ids += content['ids']
+
+        self.save_unknown_users(ids)
         return ids
+
+    def save_unknown_users(self, user_ids):
+        def split(l, n):
+            for i in xrange(0, len(l), n):
+                yield l[i:i + n]
+
+        unknown_ids = self.twitterdb.get_unknown_user_ids(user_ids)
+
+        for user_group in split(unknown_ids, 100):
+            ids = ','.join(str(id) for id in user_group)
+            api_path = '{0}users/lookup.json?user_id={1}' \
+                .format(base_api_url, ids)
+            r = requests.get(api_path, headers=self.get_headers())
+            error = "Failed to retrive usernames for {0}".format(ids)
+            assert_request_success(r, 200, error)
+            content = json.loads(r.content)
+            for user in content:
+                self.twitterdb.add_user(User(user_id=user['id'],
+                                             user_name=user['screen_name']))
 
     def get_tweets_until(self, user_id, target_datetime):
         tweets = []
@@ -143,8 +164,8 @@ class Twitter:
                    'since_id={1}' \
                    '&max_id={2}' \
                    '&user_id={3}' \
-                   '&count=200'  \
-                   .format(base_api_url, since_id, max_id, user_id)
+                   '&count=200' \
+            .format(base_api_url, since_id, max_id, user_id)
         r = requests.get(api_path, headers=self.get_headers())
         assert_request_success(r, 200, 'Failed to get tweets for {0}'
                                .format(user_id))

@@ -18,6 +18,8 @@ def api_mocks(url, request):
         path = os.path.normpath('test/fixtures/ids-1.json')
     elif 'cursor=1234' in url.query:
         path = os.path.normpath('test/fixtures/ids-2.json')
+    elif 'users/lookup' in url.path:
+        path = os.path.normpath('test/fixtures/lookup.json')
     elif '/user_timeline' in url.path and \
             max_id in url.query:
         path = os.path.normpath('test/fixtures/tweets.json')
@@ -53,6 +55,19 @@ class TestTwitter(unittest.TestCase):
         with HTTMock(api_mocks):
             tweets = self.t.get_tweets_by(1)
             self.assertEqual(len(tweets), 200)
+
+    def testSaveUnknownUsers(self):
+        with open('test/fixtures/lookup.json') as f:
+            unknown_users = [(user['id'], user['screen_name'])
+                             for user in json.load(f)]
+            unknown_ids = [user[0] for user in unknown_users]
+        self.mock_tdb.get_unknown_user_ids = MagicMock(
+            return_value=unknown_ids)
+        self.mock_tdb.add_user = MagicMock()
+        with HTTMock(api_mocks):
+            self.t.save_unknown_users(unknown_ids)
+
+        self.assertEqual(self.mock_tdb.add_user.call_count, 3)
 
     def testGetTweetsUntil(self):
         self.mock_tdb.get_tweets_by = MagicMock(return_value=[])
