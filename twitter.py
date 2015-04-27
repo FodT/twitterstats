@@ -149,7 +149,7 @@ class Twitter:
         # cue up another request
         while fire_request:
             logger.info('requesting new page... with max_id = {0}'
-                         .format(min_seen_id))
+                        .format(min_seen_id))
             fire_request = False
             new_tweets = self.get_tweets_by(user_id,
                                             since_id=last_seen_id,
@@ -180,10 +180,10 @@ class Twitter:
                    '&count=200' \
             .format(base_api_url, since_id, max_id, user_id)
         r = requests.get(api_path, headers=self.get_headers())
-         # this can happen on protected streams
+        # this can happen on protected streams
         if r.status_code == 401:
             logger.warning('user {0}\'s timeline is protected;'
-                            ' can\'t pull tweets'.format(user_id))
+                           ' can\'t pull tweets'.format(user_id))
             return {}
         assert_request_success(r, 200, 'Failed to get tweets for {0}'
                                .format(user_id))
