@@ -32,7 +32,6 @@ def load_credentials(fn):
 
 
 def get_application_only_token(consumer_key, consumer_secret):
-
     key = urllib.quote_plus(consumer_key)
     secret = urllib.quote_plus(consumer_secret)
 
@@ -55,12 +54,11 @@ def assert_request_success(r, expected_code, error):
         content = json.loads(r.content)
         error = content['errors'][0]
         error_msg = '%s; HTTP status %d, twitter code %d, message: %s' \
-                % (error, r.status_code, error['code'], error['message'])
+                    % (error, r.status_code, error['code'], error['message'])
         raise TwitterException(error_msg)
 
 
 class Twitter:
-
     def __init__(self, twittertb):
         self.bearer_token = ""
         self.twitterdb = twittertb
@@ -91,12 +89,12 @@ class Twitter:
     def get_followed_ids(self, handle):
         ids = []
         cursor = -1
-        api_path = '%sfriends/ids.json?count=20&screen_name=%s'\
+        api_path = '%sfriends/ids.json?count=20&screen_name=%s' \
                    % (base_api_url, handle)
         while not cursor == 0:
             url_with_cursor = '%s&cursor=%d' % (api_path, cursor)
             r = requests.get(url_with_cursor, headers=self.get_headers())
-            error =  "Failed to get %s\'s follows" % handle
+            error = "Failed to get %s\'s follows" % handle
             assert_request_success(r, 200, error)
             content = json.loads(r.content)
             cursor = content['next_cursor']
