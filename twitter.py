@@ -123,7 +123,7 @@ class Twitter:
                 tweets.append(tweet)
         return tweets
 
-    def get_tweets_by(self, user_id, since_id=0, max_id=sys.maxint-1):
+    def get_tweets_by(self, user_id, since_id=0, max_id=sys.maxint - 1):
         api_path = '%sstatuses/user_timeline.json?' \
                    'since_id=%d' \
                    '&max_id=%d' \
