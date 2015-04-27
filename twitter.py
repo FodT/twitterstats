@@ -6,6 +6,7 @@ import urllib
 import sys
 from datetime import datetime, timedelta
 from twitterdb import Tweet, User
+import logging
 
 credentials = {
     'key': 'GET_YOUR_OWN',
@@ -15,6 +16,7 @@ base_api_url = 'https://api.twitter.com/1.1/'
 base_oauth_url = 'https://api.twitter.com/oauth2/'
 
 credentials_path = os.path.expanduser('twitter_credentials')
+logger = logging.getLogger('twitter')
 
 
 class TwitterException(Exception):
@@ -138,7 +140,7 @@ class Twitter:
         last_created = db_tweets[0].date_inserted if num_tweets > 0 else \
             datetime(1900, 1, 1)
         if datetime.now() - last_created < refresh_threshold:
-            print 'age of last tweet less than threshold; skipping'
+            logger.info('age of last tweet less than threshold; skipping')
             fire_request = False
         tweets += [t.tweet for t in db_tweets]
         min_seen_id = sys.maxint - 1
@@ -146,7 +148,8 @@ class Twitter:
         # no interesting tweets. so, if we see a tweet we care about,
         # cue up another request
         while fire_request:
-            print 'requesting new page... with max_id = {0}'.format(min_seen_id)
+            logger.info('requesting new page... with max_id = {0}'
+                         .format(min_seen_id))
             fire_request = False
             new_tweets = self.get_tweets_by(user_id,
                                             since_id=last_seen_id,
@@ -179,7 +182,8 @@ class Twitter:
         r = requests.get(api_path, headers=self.get_headers())
          # this can happen on protected streams
         if r.status_code == 401:
-            print 'user {0}\'s timeline is protected; can\'t pull tweets'
+            logger.warning('user {0}\'s timeline is protected;'
+                            ' can\'t pull tweets'.format(user_id))
             return {}
         assert_request_success(r, 200, 'Failed to get tweets for {0}'
                                .format(user_id))
