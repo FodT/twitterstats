@@ -1,6 +1,6 @@
 import json
-import twitter_db
-from twitter_db import Tweet
+import twitterdb
+from twitterdb import Tweet, User
 import unittest
 from datetime import datetime
 
@@ -11,7 +11,7 @@ with open('test/fixtures/tweets_apr_23_2015.json') as f:
 
 class TestDBFunctions(unittest.TestCase):
     def setUp(self):
-        self.db = twitter_db.Twitter_DB('sqlite:///:memory:', echo=True)
+        self.db = twitterdb.TwitterDB('sqlite:///:memory:', echo=True)
 
     def testTweetInitialised(self):
         expected_date = datetime.now()
@@ -129,3 +129,29 @@ class TestDBFunctions(unittest.TestCase):
         self.assertEqual(len(intermediate_tweets), 1)
         self.assertEqual(now_tweets[0].id, 2)
         self.assertEqual(intermediate_tweets[0].id, 2)
+
+    def testAddUser(self):
+        user = User(user_id=1, user_name='name')
+        self.db.add_user(user)
+
+        saved_user = self.db.get_user_by_id(1)
+        self.assertEqual(saved_user.user_id, 1)
+        self.assertEqual(saved_user.user_name, 'name')
+
+    def testAddSameUser(self):
+        user1 = User(user_id=1, user_name='name')
+        user2 = User(user_id=1, user_name='differentName')
+        self.db.add_user(user1)
+        self.db.add_user(user2)
+
+        saved_user = self.db.get_user_by_id(1)
+        self.assertEqual(saved_user.user_id, 1)
+        self.assertEqual(saved_user.user_name, 'name')
+
+    def testGetUnknownUserIds(self):
+        user1 = User(user_id=1, user_name='name')
+        user2 = User(user_id=2, user_name='differentName')
+        self.db.add_user(user1)
+        self.db.add_user(user2)
+        ids = self.db.get_unknown_user_ids([1, 2, 3, 4])
+        self.assertEqual(ids, set([3, 4]))

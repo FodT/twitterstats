@@ -5,7 +5,7 @@ import requests
 import urllib
 import sys
 from datetime import datetime
-from twitter_db import Tweet
+from twitterdb import Tweet
 
 credentials = {
     'key': 'GET_YOUR_OWN',

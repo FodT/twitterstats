@@ -1,6 +1,5 @@
 from datetime import datetime
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
 from sqlalchemy import create_engine, and_
 from sqlalchemy.orm import sessionmaker
 import json
@@ -26,7 +25,18 @@ class Tweet(Base):
                     self.date_created, json.loads(self.tweet)['text'])
 
 
-class Twitter_DB:
+class User(Base):
+    __tablename__ = 'users'
+
+    user_id = Column(Integer, primary_key=True)
+    user_name = Column(String)
+
+    def __repr__(self):
+        return "<User(user_id='{0}', user_name='{1}')>"\
+            .format(self.user_id, self.user_name)
+
+
+class TwitterDB:
     def __init__(self, database, echo=False):
 
         self.engine = create_engine(database)
@@ -44,9 +54,29 @@ class Twitter_DB:
         except IntegrityError:
             session.rollback()
 
+    def add_user(self, user):
+        session = self.sessionmaker()
+        try:
+            session.add(user)
+            session.commit()
+
+        except IntegrityError:
+            session.rollback()
+
     def get_tweet_by_id(self, tweet_id):
         session = self.sessionmaker()
         return session.query(Tweet).filter_by(id=tweet_id).first()
+
+    def get_user_by_id(self, user_id):
+        session = self.sessionmaker()
+        return session.query(User).filter_by(user_id=user_id).first()
+
+    def get_unknown_user_ids(self, user_ids):
+        session = self.sessionmaker()
+        ids = session.query(User.user_id).all()
+        ids = list(sum(ids, ()))
+
+        return set(user_ids).difference(ids)
 
     def get_latest_tweet_id(self, userid):
         session = self.sessionmaker()
