@@ -27,9 +27,12 @@ if __name__ == '__main__':
     logger.addHandler(handler)
 
     logger.info('starting up!')
-    tdb = twitterdb.TwitterDB('sqlite:///test.db', echo=False)
+
+    twitter_handle = 'FodT'
+    tdb = twitterdb.TwitterDB('sqlite:///{0}.db'
+                              .format(twitter_handle), echo=False)
     t = Twitter(tdb)
-    ids = t.get_followed_ids('FodT')
+    ids = t.get_followed_ids(twitter_handle)
     t.save_unknown_users(ids)
     one_week_ago = datetime.now() - timedelta(days=7)
     for id in ids:
