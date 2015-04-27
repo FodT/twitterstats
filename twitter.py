@@ -4,7 +4,7 @@ import os
 import requests
 import urllib
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from twitterdb import Tweet, User
 
 credentials = {
@@ -50,15 +50,16 @@ def get_application_only_token(consumer_key, consumer_secret):
     return bearer_token
 
 
-def assert_request_success(r, expected_code, error):
+def assert_request_success(r, expected_code, error_string):
     if r.status_code != expected_code:
         content = json.loads(r.content)
-        error = content['errors'][0]
+        errors = content['errors']
+        error = content['error'] if not errors else errors[0]
         error_msg = '{0}; HTTP status {1}, twitter code {2}, message: {3}' \
-            .format(error, r.status_code,
+            .format(error_string, r.status_code,
                     error['code'], error['message'])
         raise TwitterException(error_msg)
-    if r.headers['x-rate-limit-remaining'] == 0:
+    if r.headers['x-rate-limit-remaining'] == str(1):
         raise TwitterException('rate limit exceeded. try running again in 15m')
 
 
@@ -126,18 +127,26 @@ class Twitter:
                 self.twitterdb.add_user(User(user_id=user['id'],
                                              user_name=user['screen_name']))
 
-    def get_tweets_until(self, user_id, target_datetime):
+    def get_tweets_until(self, user_id, target_datetime,
+                         refresh_threshold=timedelta(minutes=1)):
         tweets = []
         fire_request = True
         # minimise the amount of data we pull down by seeing what's in the db
-        last_seen_id = self.twitterdb.get_latest_tweet_id(user_id)
         db_tweets = self.twitterdb.get_tweets_by(user_id)
+        num_tweets = len(db_tweets) > 0
+        last_seen_id = db_tweets[0].id if num_tweets > 0 else 1
+        last_created = db_tweets[0].date_inserted if num_tweets > 0 else \
+            datetime(1900, 1, 1)
+        if datetime.now() - last_created < refresh_threshold:
+            print 'age of last tweet less than threshold; skipping'
+            fire_request = False
         tweets += [t.tweet for t in db_tweets]
         min_seen_id = sys.maxint - 1
         # we want to page through the timeline until we are definite there are
         # no interesting tweets. so, if we see a tweet we care about,
         # cue up another request
         while fire_request:
+            print 'requesting new page... with max_id = {0}'.format(min_seen_id)
             fire_request = False
             new_tweets = self.get_tweets_by(user_id,
                                             since_id=last_seen_id,
@@ -147,7 +156,7 @@ class Twitter:
                     strptime(tweet['created_at'],
                              '%a %b %d %H:%M:%S +0000 %Y')
                 if tweet['id'] < min_seen_id:
-                    min_seen_id = tweet['id']
+                    min_seen_id = tweet['id'] - 1
                 if datetime_created >= target_datetime:
                     fire_request = True
                     db_tweet = Tweet(
@@ -164,9 +173,14 @@ class Twitter:
                    'since_id={1}' \
                    '&max_id={2}' \
                    '&user_id={3}' \
+                   '&include_rts=false' \
                    '&count=200' \
             .format(base_api_url, since_id, max_id, user_id)
         r = requests.get(api_path, headers=self.get_headers())
+         # this can happen on protected streams
+        if r.status_code == 401:
+            print 'user {0}\'s timeline is protected; can\'t pull tweets'
+            return {}
         assert_request_success(r, 200, 'Failed to get tweets for {0}'
                                .format(user_id))
         return json.loads(r.content)

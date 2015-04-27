@@ -5,7 +5,7 @@ from sqlalchemy.orm import sessionmaker
 import json
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String, DateTime
-
+from datetime import datetime
 
 Base = declarative_base()
 
@@ -16,13 +16,16 @@ class Tweet(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer)
     date_created = Column(DateTime)
+    date_inserted = Column(DateTime, default=datetime.now)
     tweet = Column(String)
 
     def __repr__(self):
         return "<Tweet(id='{0}', user_id='{1}', " \
-               "date_created='{2}, tweet=...{3}...')>"\
+               "date_created='{2}, date_inserted='{3}," \
+               " tweet=...{3}...')>"\
             .format(self.id, self.user_id,
-                    self.date_created, json.loads(self.tweet)['text'])
+                    self.date_created, self.date_inserted,
+                    json.loads(self.tweet)['text'])
 
 
 class User(Base):
