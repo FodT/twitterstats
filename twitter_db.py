@@ -48,10 +48,11 @@ class Twitter_DB:
         session = self.sessionmaker()
         return session.query(Tweet).filter_by(id=tweet_id).first()
 
-    def get_latest_tweet(self, userid):
+    def get_latest_tweet_id(self, userid):
         session = self.sessionmaker()
-        return session.query(Tweet).filter_by(user_id=userid). \
+        latest = session.query(Tweet).filter_by(user_id=userid). \
             order_by(Tweet.id.desc()).first()
+        return 1 if not latest else latest.id
 
     def get_tweets_by(self, userid, date_until=None):
         if not date_until:

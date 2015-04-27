@@ -4,11 +4,13 @@ from mock import MagicMock
 import datetime
 import json
 from httmock import all_requests, HTTMock
+import sys
 import twitter
 
 
 @all_requests
 def api_mocks(url, request):
+    max_id = 'max_id={0}'.format(sys.maxint - 1)
     path = os.path.normpath('test/fixtures/rate_limit.json')
     if 'oauth2/token' in url.path:
         path = os.path.normpath('test/fixtures/bearer_token.json')
@@ -16,11 +18,15 @@ def api_mocks(url, request):
         path = os.path.normpath('test/fixtures/ids-1.json')
     elif 'cursor=1234' in url.query:
         path = os.path.normpath('test/fixtures/ids-2.json')
-    elif '/user_timeline' in url.path:
+    elif '/user_timeline' in url.path and \
+            max_id in url.query:
         path = os.path.normpath('test/fixtures/tweets.json')
+    elif '/user_timeline' in url.path:
+        path = os.path.normpath('test/fixtures/tweet_apr_18_2015.json')
     with open(path, "r") as resource:
         return {'status_code': 200,
-                'content': resource.read()}
+                'content': resource.read(),
+                'headers': {'x-rate-limit-remaining': 100}}
 
 
 class TestTwitter(unittest.TestCase):
@@ -54,6 +60,6 @@ class TestTwitter(unittest.TestCase):
             expected = json.load(f)
 
         with HTTMock(api_mocks):
-            target_date = datetime.date(2015, 4, 23)
+            target_date = datetime.datetime(2015, 4, 23)
             tweets = self.t.get_tweets_until(1, target_date)
             self.assertEqual(len(tweets), len(expected))

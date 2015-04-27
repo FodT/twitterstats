@@ -71,15 +71,15 @@ class TestDBFunctions(unittest.TestCase):
         self.db.add_tweet(tweet3)
         self.db.add_tweet(tweet4)
 
-        latest1 = self.db.get_latest_tweet(1)
-        latest2 = self.db.get_latest_tweet(2)
+        latest1 = self.db.get_latest_tweet_id(1)
+        latest2 = self.db.get_latest_tweet_id(2)
 
-        self.assertEqual(latest1.id, 3)
-        self.assertEqual(latest2.id, 6)
+        self.assertEqual(latest1, 3)
+        self.assertEqual(latest2, 6)
 
     def test_get_last_tweet_no_tweets(self):
-        latest = self.db.get_latest_tweet(123456)
-        self.assertEqual(latest, None)
+        latest = self.db.get_latest_tweet_id(123456)
+        self.assertEqual(latest, 1)
 
     def testGetTweetsBy(self):
         tweet1 = Tweet(id=1, user_id=1,

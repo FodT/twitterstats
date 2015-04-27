@@ -57,6 +57,8 @@ def assert_request_success(r, expected_code, error):
         error_msg = '%s; HTTP status %d, twitter code %d, message: %s' \
                     % (error, r.status_code, error['code'], error['message'])
         raise TwitterException(error_msg)
+    if r.headers['x-rate-limit-remaining'] == 0:
+        raise TwitterException('rate limit exceeded. try running again in 15m')
 
 
 class Twitter:
@@ -102,25 +104,37 @@ class Twitter:
             ids += content['ids']
         return ids
 
-    def get_tweets_until(self, user_id, target_date):
+    def get_tweets_until(self, user_id, target_datetime):
         tweets = []
-        request_again = False
-        last_seen = self.twitterdb.get_latest_tweet(user_id)
-        last_seen_id = 1 if not last_seen else last_seen.id
+        fire_request = True
+        # minimise the amount of data we pull down by seeing what's in the db
+        last_seen_id = self.twitterdb.get_latest_tweet_id(user_id)
         db_tweets = self.twitterdb.get_tweets_by(user_id)
         tweets += [t.tweet for t in db_tweets]
-        new_tweets = self.get_tweets_by(user_id, since_id=last_seen_id)
-        for tweet in new_tweets:
-            datetime_created = datetime.strptime(tweet['created_at'],
-                                                 '%a %b %d %H:%M:%S +0000 %Y')
-            if datetime_created.date() >= target_date:
-                db_tweet = Tweet(
-                    id=tweet['id'],
-                    user_id=user_id,
-                    date_created=datetime_created,
-                    tweet=json.dumps(tweet))
-                self.twitterdb.add_tweet(db_tweet)
-                tweets.append(tweet)
+        min_seen_id = sys.maxint - 1
+        # we want to page through the timeline until we are definite there are
+        # no interesting tweets. so, if we see a tweet we care about,
+        # cue up another request
+        while fire_request:
+            fire_request = False
+            new_tweets = self.get_tweets_by(user_id,
+                                            since_id=last_seen_id,
+                                            max_id=min_seen_id)
+            for tweet in new_tweets:
+                datetime_created = datetime. \
+                    strptime(tweet['created_at'],
+                             '%a %b %d %H:%M:%S +0000 %Y')
+                if tweet['id'] < min_seen_id:
+                    min_seen_id = tweet['id']
+                if datetime_created >= target_datetime:
+                    fire_request = True
+                    db_tweet = Tweet(
+                        id=tweet['id'],
+                        user_id=user_id,
+                        date_created=datetime_created,
+                        tweet=json.dumps(tweet))
+                    self.twitterdb.add_tweet(db_tweet)
+                    tweets.append(tweet)
         return tweets
 
     def get_tweets_by(self, user_id, since_id=0, max_id=sys.maxint - 1):
