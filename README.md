@@ -6,6 +6,11 @@ Probably just 'num of tweets per user per day'.
 
 it's a work in progress.
 
+Usage:
+twitterstats.py get-tweets TwitterHandle
+
+twitterstats.py show-stats TwitterHandle
+
 
 Known issues:
 * can't pull tweets from protected timelines, but will generate false 'zero' stats for them.
