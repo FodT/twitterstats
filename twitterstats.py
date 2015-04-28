@@ -9,7 +9,6 @@ from twitter import Twitter
 import twitterdb
 
 
-
 # if the most recent tweet by a user is less than this old,
 # don't bother pulling new tweets
 # this is an optimisation so we don't waste api calls.

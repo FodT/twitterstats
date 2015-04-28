@@ -73,10 +73,6 @@ class TwitterDB:
         session = self.sessionmaker()
         return session.query(User).filter_by(user_id=user_id).first()
 
-    def get_users(self):
-        session = self.sessionmaker()
-        return session.query(User).order_by(User.user_name.asc()).all()
-
     def get_unknown_user_ids(self, user_ids):
         session = self.sessionmaker()
         ids = session.query(User.user_id).all()
@@ -84,29 +80,12 @@ class TwitterDB:
 
         return list(set(user_ids).difference(ids))
 
-    def get_latest_tweet_id(self, userid):
-        session = self.sessionmaker()
-        latest = session.query(Tweet).filter_by(user_id=userid). \
-            order_by(Tweet.id.desc()).first()
-        return 1 if not latest else latest.id
-
     def get_tweets_by(self, userid, date_until=datetime(1900, 1, 1)):
         session = self.sessionmaker()
         return session.query(Tweet).filter(
             and_(Tweet.user_id == userid,
                  Tweet.date_created >= date_until)). \
             order_by(Tweet.id.desc()).all()
-
-    def get_tweet_count_for_date(self, userid, for_date=None):
-        if not for_date:
-            for_date = datetime.now().date()
-        session = self.sessionmaker()
-        count = session.query(func.count(Tweet.user_id)). \
-            filter(and_(Tweet.user_id == userid,
-                        func.date(Tweet.date_created) == for_date)). \
-            group_by(Tweet.user_id) \
-            .first()
-        return 0 if not count else count[0]
 
     def get_tweet_counts_for_date(self, for_date=None):
         if not for_date:
