@@ -1,14 +1,17 @@
 from datetime import datetime, timedelta
+import logging
+
+import click
+
 from twitter import Twitter
 import twitterdb
-import logging
-import click
+import tabulate
+
 
 # if the most recent tweet by a user is less than this old,
 # don't bother pulling new tweets
 # this is an optimisation so we don't waste api calls.
-user_refresh=timedelta(hours=1)
-
+user_refresh = timedelta(hours=1)
 
 logger = logging.getLogger('twitter')
 logger.setLevel(logging.INFO)
@@ -30,6 +33,25 @@ def cli():
 @click.argument('handle')
 def show_stats(handle):
     logger.info('generating stats report for {0}'.format(handle))
+    tdb = twitterdb.TwitterDB('sqlite:///{0}.db'
+                              .format(handle), echo=False)
+    users = tdb.get_users()
+
+    dates = [(datetime.today() - timedelta(days=i)).date()
+             for i in range(1, 8)]
+
+    headers = ['user', ' today (so far)'] +\
+              [date.strftime('%A %x') for date in dates]
+
+    rows = []
+    for user in users:
+        row = [user.user_name, tdb.get_tweet_count_for_date(
+            user.user_id, datetime.now().date())]
+        for date in dates:
+            row.append(tdb.get_tweet_count_for_date(user.user_id, date))
+        rows.append(row)
+
+    logger.info(tabulate.tabulate(rows, headers))
 
 
 @cli.command(name='get-tweets')

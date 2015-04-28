@@ -4,3 +4,4 @@ pep8
 pylint
 sqlalchemy
 click
+tabulate

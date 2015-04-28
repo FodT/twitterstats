@@ -1,6 +1,5 @@
-from datetime import datetime
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy import create_engine, and_
+from sqlalchemy import create_engine, and_, func
 from sqlalchemy.orm import sessionmaker
 import json
 from sqlalchemy.ext.declarative import declarative_base
@@ -22,7 +21,7 @@ class Tweet(Base):
     def __repr__(self):
         return "<Tweet(id='{0}', user_id='{1}', " \
                "date_created='{2}, date_inserted='{3}," \
-               " tweet=...{3}...')>"\
+               " tweet=...{3}...')>" \
             .format(self.id, self.user_id,
                     self.date_created, self.date_inserted,
                     json.loads(self.tweet)['text'])
@@ -35,7 +34,7 @@ class User(Base):
     user_name = Column(String)
 
     def __repr__(self):
-        return "<User(user_id='{0}', user_name='{1}')>"\
+        return "<User(user_id='{0}', user_name='{1}')>" \
             .format(self.user_id, self.user_name)
 
 
@@ -74,6 +73,10 @@ class TwitterDB:
         session = self.sessionmaker()
         return session.query(User).filter_by(user_id=user_id).first()
 
+    def get_users(self):
+        session = self.sessionmaker()
+        return session.query(User).order_by(User.user_name.asc()).all()
+
     def get_unknown_user_ids(self, user_ids):
         session = self.sessionmaker()
         ids = session.query(User.user_id).all()
@@ -87,11 +90,18 @@ class TwitterDB:
             order_by(Tweet.id.desc()).first()
         return 1 if not latest else latest.id
 
-    def get_tweets_by(self, userid, date_until=None):
-        if not date_until:
-            date_until = datetime(1900, 1, 1)
+    def get_tweets_by(self, userid, date_until=datetime(1900, 1, 1)):
         session = self.sessionmaker()
         return session.query(Tweet).filter(
             and_(Tweet.user_id == userid,
                  Tweet.date_created >= date_until)). \
             order_by(Tweet.id.desc()).all()
+
+    def get_tweet_count_for_date(self, userid, for_date=None):
+        session = self.sessionmaker()
+        count = session.query(func.count(Tweet.user_id)). \
+            filter(and_(Tweet.user_id == userid,
+                        func.date(Tweet.date_created) == for_date)). \
+            group_by(Tweet.user_id) \
+            .first()
+        return 0 if not count else count[0]
