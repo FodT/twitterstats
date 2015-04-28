@@ -1,6 +1,6 @@
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import create_engine, and_, func
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, aliased
 import json
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String, DateTime
@@ -98,6 +98,8 @@ class TwitterDB:
             order_by(Tweet.id.desc()).all()
 
     def get_tweet_count_for_date(self, userid, for_date=None):
+        if not for_date:
+            for_date = datetime.now().date()
         session = self.sessionmaker()
         count = session.query(func.count(Tweet.user_id)). \
             filter(and_(Tweet.user_id == userid,
@@ -105,3 +107,20 @@ class TwitterDB:
             group_by(Tweet.user_id) \
             .first()
         return 0 if not count else count[0]
+
+    def get_tweet_counts_for_date(self, for_date=None):
+        if not for_date:
+            for_date = datetime.now().date()
+        session = self.sessionmaker()
+
+        tally_subq = session.query(
+            Tweet.user_id,
+            func.count(Tweet.user_id).label('tally')). \
+            filter(func.date(Tweet.date_created) == for_date). \
+            group_by(Tweet.user_id).subquery()
+
+
+
+        return session.query(User.user_name, tally_subq.c.tally)\
+            .select_from(User).outerjoin(tally_subq, tally_subq.c.user_id == User.user_id ).order_by(User.user_name).all()
+
