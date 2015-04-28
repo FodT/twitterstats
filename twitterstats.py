@@ -1,11 +1,13 @@
+from collections import defaultdict
 from datetime import datetime, timedelta
 import logging
 
 import click
+import tabulate
 
 from twitter import Twitter
 import twitterdb
-import tabulate
+
 
 
 # if the most recent tweet by a user is less than this old,
@@ -35,23 +37,30 @@ def show_stats(handle):
     logger.info('generating stats report for {0}'.format(handle))
     tdb = twitterdb.TwitterDB('sqlite:///{0}.db'
                               .format(handle), echo=False)
-    users = tdb.get_users()
 
     dates = [(datetime.today() - timedelta(days=i)).date()
              for i in range(1, 8)]
 
-    headers = ['user', ' today (so far)'] +\
-              [date.strftime('%A %x') for date in dates]
+    headers = ['0. user', '1. today (so far)'] + \
+              [date.strftime('{0}. %a %x'.format(idx + 2))
+               for idx, date in enumerate(dates)]
 
-    rows = []
-    for user in users:
-        row = [user.user_name, tdb.get_tweet_count_for_date(
-            user.user_id, datetime.now().date())]
-        for date in dates:
-            row.append(tdb.get_tweet_count_for_date(user.user_id, date))
-        rows.append(row)
+    today_counts = tdb.get_tweet_counts_for_date(datetime.now().date())
+    columns = defaultdict(list)
+    for count in today_counts:
+        columns[headers[0]].append(count[0])
+        columns[headers[1]].append(count[1])
 
-    logger.info(tabulate.tabulate(rows, headers))
+    for idx, date in enumerate(dates):
+        counts = tdb.get_tweet_counts_for_date(date)
+        for count in counts:
+            columns[headers[idx + 2]].append(count[1])
+
+    # I'm sure there's a more sensible way of doing this
+    # But tabulate doesn't want to sort the columns into a sensible order.
+    rows = zip(*([key] + value for key, value in sorted(columns.items())))
+
+    logger.info(tabulate.tabulate(rows, headers='firstrow'))
 
 
 @cli.command(name='get-tweets')
