@@ -3,3 +3,4 @@ httmock
 pep8
 pylint
 sqlalchemy
+click
