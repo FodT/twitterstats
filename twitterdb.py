@@ -119,8 +119,8 @@ class TwitterDB:
             filter(func.date(Tweet.date_created) == for_date). \
             group_by(Tweet.user_id).subquery()
 
-
-
-        return session.query(User.user_name, tally_subq.c.tally)\
-            .select_from(User).outerjoin(tally_subq, tally_subq.c.user_id == User.user_id ).order_by(User.user_name).all()
-
+        return session.query(User.user_name,
+                             func.ifnull(tally_subq.c.tally, 0))\
+            .select_from(User)\
+            .outerjoin(tally_subq, tally_subq.c.user_id == User.user_id)\
+            .order_by(User.user_name).all()

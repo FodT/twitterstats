@@ -159,6 +159,42 @@ class TestDBFunctions(unittest.TestCase):
 
         self.assertEqual(tweet_count, 2)
 
+    def testGetAllTweetCountsForDate(self):
+        date1 = datetime(2015, 3, 1, 1, 2, 3)
+        date2 = datetime(2015, 3, 2, 1, 3, 4)
+        date2_1 = datetime(2015, 3, 2, 1, 3, 5)
+        date3 = datetime(2015, 4, 3, 11, 3, 2)
+        tweet1 = Tweet(id=1, user_id=1,
+                       date_created=date1,
+                       tweet=json.dumps(tweet_fixture[0]))
+        tweet2 = Tweet(id=2, user_id=1,
+                       date_created=date2,
+                       tweet=json.dumps(tweet_fixture[1]))
+
+        tweet3 = Tweet(id=3, user_id=1,
+                       date_created=date2_1,
+                       tweet=json.dumps(tweet_fixture[2]))
+
+        tweet4 = Tweet(id=4, user_id=1,
+                       date_created=date3,
+                       tweet=json.dumps(tweet_fixture[2]))
+
+        tweet5 = Tweet(id=5, user_id=2,
+                       date_created=date3,
+                       tweet=json.dumps(tweet_fixture[2]))
+
+        self.db.add_user(User(user_id=1, user_name='aaron'))
+        self.db.add_user(User(user_id=2, user_name='bob'))
+        self.db.add_tweet(tweet1)
+        self.db.add_tweet(tweet2)
+        self.db.add_tweet(tweet3)
+        self.db.add_tweet(tweet4)
+        self.db.add_tweet(tweet5)
+
+        tweet_tallies = self.db.get_tweet_counts_for_date(date2.date())
+
+        self.assertEqual(tweet_tallies[0][1], 2)
+
     def testAddUser(self):
         user = User(user_id=1, user_name='name')
         self.db.add_user(user)
